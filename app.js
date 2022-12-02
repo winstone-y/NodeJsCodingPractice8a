@@ -36,27 +36,68 @@ initDbAndServer();
 
 // API 1 filter Todo
 
+const hasPriorityAndStatusProperties = (requestQuery) => {
+  return (
+    requestQuery.priority !== undefined && requestQuery.status !== undefined
+  );
+};
+
+const hasPriorityProperty = (requestQuery) => {
+  return requestQuery.priority !== undefined;
+};
+
+const hasStatusProperty = (requestQuery) => {
+  return requestQuery.status !== undefined;
+};
 app.get("/todos/", async (request, response) => {
-  const {
-    offset = 0,
-    limit = 10,
-    order = "ASC",
-    order_by = "",
-    search_q = "",
-  } = request.query;
+  let data = null;
+  let getTodosQuery = "";
+  const { search_q = "", priority, status } = request.query;
 
-  const getTodoQuery = `
-        SELECT
-          *
-        FROM
-         todo
-        WHERE todo LIKE '%${search_q}%'
-        ORDER BY ${order_by} '${order}'
-        LIMIT ${limit}
-        OFFSET ${offset};`;
+  switch (true) {
+    case hasPriorityAndStatusProperties(request.query): //if this is true then below query is taken in the code
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%'
+    AND status = '${status}'
+    AND priority = '${priority}';`;
+      break;
+    case hasPriorityProperty(request.query):
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%'
+    AND priority = '${priority}';`;
+      break;
+    case hasStatusProperty(request.query):
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%'
+    AND status = '${status}';`;
+      break;
+    default:
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%';`;
+  }
 
-  const result = await db.all(getTodoQuery);
-  response.send(result);
+  data = await db.all(getTodosQuery);
+  response.send(data);
 });
 
 //API 2 Select to do
